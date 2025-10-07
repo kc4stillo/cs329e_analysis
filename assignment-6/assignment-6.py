@@ -122,7 +122,7 @@ labels = (heart_df["Target"] == "Yes").astype(int)
 split = .8
 
 train = np.arange(0, round(features.shape[0] * split) + 1)
-test = np.arange(train[-1] + 1, features.shape[0] + 
+test = np.arange(train[-1] + 1, features.shape[0] + 1)
 
 # %%
 
