@@ -125,6 +125,19 @@ train = np.arange(0, round(features.shape[0] * split) + 1)
 test = np.arange(train[-1] + 1, features.shape[0] + 1)
 
 # %%
+w = np.array([.3453,.453,.234])
+x = np.array([1, 1, 1])
+
+def sigmoid(w, x):
+    z = w.dot(x)
+    return 1/(1 + (np.e ** -z)) 
+
+
+
+sigmoid(w,x)
+
+
+# %%
 
 
 # %% [markdown]
