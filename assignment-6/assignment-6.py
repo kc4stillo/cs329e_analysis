@@ -131,16 +131,15 @@ test_x = features.loc[test]
 test_y = labels.loc[test]
 
 # %%
-def sigmoid(w, x):
+def sigmoid(w , x):
     z = x.dot(w)
-    return (1   /    (1 + (np.e ** -z)) ).reshape(-1,1)
+    return (1   /    (1 + (np.exp(-z))) ).reshape(-1,1)
 
 def cost(w, x, y):
-    # to avoid 0's in log
-    a = np.clip(sigmoid(w,x), 1e-12, 1 - 1e-12)
-    
-    cost_calc = (-1/len(y)) * sum((y *   np.log(a)) + ((1 - y) * (np.log(1-a))))
-    return cost_calc
+    a = sigmoid(w,x)
+    # a = np.clip(sigmoid(w, x), 1e-12, 1 - 1e-12)
+    cost_val = (-1/len(y)) * np.sum((y *   np.log(a)) + ((1 - y) * (np.log(1-a))))
+    return cost_val
 
 def grad_descent(w,x,y,alpha=.1):
     # learning_rule
@@ -148,7 +147,7 @@ def grad_descent(w,x,y,alpha=.1):
     gradient = (x.T.dot(a - y)) / len(y)
 
     # descending to new w
-    new_w = w.reshape((alpha * gradient).shape[0], -1) - alpha * gradient
+    new_w =  w.reshape(-1, 1) - alpha * gradient
     return new_w
 
 # %%
@@ -177,8 +176,8 @@ plt.plot(x,y)
 plt.xlabel("iteration")
 plt.ylabel("cost")
 plt.title("iterations vs cost")
-# %%
 
+plt.show()
 
 # %% [markdown]
 # # Task 2 - (4 points)
@@ -193,7 +192,16 @@ plt.title("iterations vs cost")
 # 
 
 # %%
-# Add your code Here! 
+x = test_x.to_numpy()
+y_true = test_y.to_numpy()
+
+y_prob = sigmoid(w, x)
+y_pred = [1 if i >= .5 else 0  for i in y_prob]
+
+results = pd.DataFrame(np.array(y_pred), y_true ).reset_index().rename(columns={"index":"y_pred", 0:"y_true"})
+
+# accuracy = np.mean(y_pred == y_true)
+
 
 
 
