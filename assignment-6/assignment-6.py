@@ -122,21 +122,61 @@ labels = (heart_df["Target"] == "Yes").astype(int)
 split = .8
 
 train = np.arange(0, round(features.shape[0] * split) + 1)
-test = np.arange(train[-1] + 1, features.shape[0] + 1)
+test = np.arange(train[-1] + 1, features.shape[0])
+
+train_x = features.loc[train]
+train_y = labels.loc[train]
+
+test_x = features.loc[test]
+test_y = labels.loc[test]
 
 # %%
-w = np.array([.3453,.453,.234])
-x = np.array([1, 1, 1])
-
 def sigmoid(w, x):
-    z = w.dot(x)
-    return 1/(1 + (np.e ** -z)) 
+    z = x.dot(w)
+    return (1   /    (1 + (np.e ** -z)) ).reshape(-1,1)
 
+def cost(w, x, y):
+    # to avoid 0's in log
+    a = np.clip(sigmoid(w,x), 1e-12, 1 - 1e-12)
+    
+    cost_calc = (-1/len(y)) * sum((y *   np.log(a)) + ((1 - y) * (np.log(1-a))))
+    return cost_calc
 
+def grad_descent(w,x,y,alpha=.1):
+    # learning_rule
+    a = sigmoid(w,x)
+    gradient = (x.T.dot(a - y)) / len(y)
 
-sigmoid(w,x)
+    # descending to new w
+    new_w = w.reshape((alpha * gradient).shape[0], -1) - alpha * gradient
+    return new_w
 
+# %%
+w = np.zeros(train_x.shape[1]).reshape(3,)
+x = train_x.to_numpy().reshape(-1,3)
+y = train_y.to_numpy().reshape(-1,1)
 
+cost_hist = np.array([])
+
+iterations = 100
+alpha = .0001
+
+for i in range(iterations):
+    cost_val = cost(w,x,y)
+    cost_hist = np.append(cost_hist,cost_val)
+    w = grad_descent(w,x,y,alpha)
+
+    print(f"new cost: {cost_val}")
+
+# %%
+x = np.arange(1,101)
+y = cost_hist
+
+plt.plot(x,y)
+
+plt.xlabel("iteration")
+plt.ylabel("cost")
+plt.title("iterations vs cost")
 # %%
 
 
