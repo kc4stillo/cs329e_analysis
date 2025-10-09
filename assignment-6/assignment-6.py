@@ -198,12 +198,24 @@ y_true = test_y.to_numpy()
 y_prob = sigmoid(w, x)
 y_pred = [1 if i >= .5 else 0  for i in y_prob]
 
-results = pd.DataFrame(np.array(y_pred), y_true ).reset_index().rename(columns={"index":"y_pred", 0:"y_true"})
+results = pd.DataFrame({"y_true": y_true.flatten(),
+    "y_pred": np.array(y_pred)})
 
-# accuracy = np.mean(y_pred == y_true)
+results["tp"] = ((results["y_pred"] == 1) & (results["y_true"] == 1)).astype(int)
+results["fp"] = ((results["y_pred"] == 1) & (results["y_true"] == 0)).astype(int)
 
+results["tn"] = ((results["y_pred"] == 0) & (results["y_true"] == 0)).astype(int)
+results["fn"] = ((results["y_pred"] == 0) & (results["y_true"] == 1)).astype(int)
 
+accuracy = np.mean(results["y_pred"] == results["y_true"])
+precision = results["tp"].sum() / (results["tp"].sum() + results["fp"].sum())
+recall = results["tp"].sum() / (results["tp"].sum() + results["fn"].sum())
+f1 = 2 * ((precision * recall) / (precision + recall))
 
+print(f"accuracy: {accuracy}")
+print(f"precision: {precision}")
+print(f"recall: {recall}")
+print(f"f1: {f1}")
 
 # %% [markdown]
 # # Task 3 - (4 points)
@@ -213,7 +225,94 @@ results = pd.DataFrame(np.array(y_pred), y_true ).reset_index().rename(columns={
 # (4 points - 2 for code, 1 for cost visualizaiton, 1 for description.)
 
 # %%
-# Add your code Here! 
+def sigmoid_w_bias(b, w , x):
+    z = x.dot(w) + b
+    return (1   /    (1 + (np.exp((-1 * z)))) ).reshape(-1,1)
+
+def cost_w_bias(b, w, x, y):
+    # a = sigmoid_w_bias(b, w,x)
+    a = np.clip(sigmoid_w_bias(b, w, x), 1e-12, 1 - 1e-12)
+    cost_val = (-1/len(y)) * np.sum((y *   np.log(a)) + ((1 - y) * (np.log(1-a))))
+    return cost_val
+
+def grad_descent_w_bias(b, w,x,y,alpha=.1):
+    # learning_rule
+    a = sigmoid_w_bias(b, w,x)
+    error = (a - y)
+    w_gradient = (x.T.dot(error)) / len(y)
+    b_gradient = np.mean(error)
+
+    # descending to new w
+    new_w = w - alpha * w_gradient
+    new_b = b - alpha * b_gradient
+    return new_b, new_w
+
+# %%
+x_unscaled = train_x.to_numpy()
+mean = np.mean(x_unscaled, axis=0)
+std = np.std(x_unscaled, axis=0)
+
+x = (x_unscaled - mean) / std
+b = 0
+w = np.zeros((train_x.shape[1], 1))
+y = train_y.to_numpy().reshape(-1,1)
+
+cost_hist = np.array([])
+
+iterations = 100
+alpha = .1
+
+for i in range(iterations):
+    cost_val = cost_w_bias(b,w,x,y)
+    cost_hist = np.append(cost_hist,cost_val)
+    b, w = grad_descent_w_bias(b,w,x,y,alpha)
+
+    print(f"new cost: {cost_val}")
+
+# %%
+x = np.arange(1,iterations+1)
+y = cost_hist
+
+plt.plot(x,y)
+
+plt.xlabel("iteration")
+plt.ylabel("cost")
+plt.title("iterations vs cost")
+
+plt.show()
+
+# %%
+x_test_unscaled = test_x.to_numpy()
+y_true = test_y.to_numpy().reshape(-1,1)
+
+x_test_scaled = (x_test_unscaled - mean) / std
+
+y_prob = sigmoid_w_bias(b, w, x_test_scaled)
+y_pred = (y_prob >= 0.5).astype(int)
+
+results = pd.DataFrame({
+    "y_true": y_true.flatten(),
+    "y_pred": y_pred.flatten()
+})
+
+results["tp"] = ((results["y_pred"] == 1) & (results["y_true"] == 1)).astype(int)
+results["fp"] = ((results["y_pred"] == 1) & (results["y_true"] == 0)).astype(int)
+
+results["tn"] = ((results["y_pred"] == 0) & (results["y_true"] == 0)).astype(int)
+results["fn"] = ((results["y_pred"] == 0) & (results["y_true"] == 1)).astype(int)
+
+accuracy = np.mean(results["y_pred"] == results["y_true"])
+precision = results["tp"].sum() / (results["tp"].sum() + results["fp"].sum())
+recall = results["tp"].sum() / (results["tp"].sum() + results["fn"].sum())
+f1 = 2 * ((precision * recall) / (precision + recall))
+
+print(f"accuracy: {accuracy}")
+print(f"precision: {precision}")
+print(f"recall: {recall}")
+print(f"f1: {f1}")
+
+#%% [markdown]
+# Scaling the features set each column to mean 0 and standard deviation 1, and adding a y-intercept let the model adjust the decision boundary. This kept the sigmoid inputs in a good range and helped the model learn properly. As a result, predictions were more balanced and accuracy and recall improved compared to the unscaled and no y-intercept version.
 
 # %% [markdown]
 # # Task 4 - Implement the Bold Driver   - (4 points)
@@ -227,7 +326,58 @@ results = pd.DataFrame(np.array(y_pred), y_true ).reset_index().rename(columns={
 # 
 
 # %%
-# Add your code Here! 
+w = np.zeros(train_x.shape[1]).reshape(3,)
+x = train_x.to_numpy().reshape(-1,3)
+y = train_y.to_numpy().reshape(-1,1)
+
+cost_hist = np.array([])
+prev_weight = None
+
+iterations = 100
+alpha = .0001
+final_iterations = iterations
+
+for i in range(iterations):
+    cost_val = cost(w,x,y)
+    w = grad_descent(w,x,y,alpha)
+
+    if i != 0: 
+        prev_cost_val = cost_hist[len(cost_hist) - 1]
+        if prev_cost_val > cost_val: 
+            alpha -= alpha * 0.025
+        elif prev_cost_val + (10 ** -10) < cost_val:
+            w = prev_weight
+            alpha = alpha * 0.5
+            
+        if abs(cost_val - cost_hist[len(cost_hist) - 2]) < 0.001:
+            final_iterations = i
+            cost_hist = np.append(cost_hist,cost_val)
+            print("Stopped at iteration # " + str(final_iterations))
+            break
+        
+
+    cost_hist = np.append(cost_hist,cost_val)
+    prev_weight = w 
+
+    print(f"new cost: {cost_val}")
+    
+y_pred = np.matmul(w.T, x.T)
+y_pred = np.transpose(y_pred)
+y_pred = np.exp(y_pred) / (1 + np.exp(y_pred))
+y_pred[y_pred < 0.5] = 0
+y_pred[y_pred >= 0.5] = 1
+
+y_pred
+
+# %%
+x = np.arange(1,len(cost_hist)+1)
+y = cost_hist
+
+plt.plot(x,y)
+
+plt.xlabel("iteration")
+plt.ylabel("cost")
+plt.title("iterations vs cost")
 
 # %% [markdown]
 # # Task 5 - Implement the L2 norm regularization.  - (4 points)
@@ -244,6 +394,103 @@ results = pd.DataFrame(np.array(y_pred), y_true ).reset_index().rename(columns={
 # (4 points - 2 for code, 1 for cost visualizaiton, 1 for description.)
 
 # %%
-# Add your code Here! 
+def sigmoid_w_bias(b, w , x):
+    z = x.dot(w) + b
+    return (1   /    (1 + (np.exp((-1 * z)))) ).reshape(-1,1)
+
+def cost_w_bias_l2(b, w, x, y, lam):
+    # a = sigmoid_w_bias(b, w,x)
+    a = np.clip(sigmoid_w_bias(b, w, x), 1e-12, 1 - 1e-12)
+    loss = (-1/len(y)) * np.sum((y *   np.log(a)) + ((1 - y) * (np.log(1-a))))
+    l2_penalty = (lam / (2 * len(y))) * np.sum(np.square(w))
+    cost_val = loss + l2_penalty
+    return cost_val
+
+def grad_descent_w_bias_l2(b, w,x,y,lam,alpha=.1, ):
+    # learning_rule
+    a = sigmoid_w_bias(b, w, x)
+    error = a - y
+
+    w_gradient = (x.T.dot(error)) / len(y) + (lam / len(y)) * w
+    b_gradient = np.mean(error)
+
+    new_w = w - alpha * w_gradient
+    new_b = b - alpha * b_gradient
+    return new_b, new_w
+
+# %%
+x_unscaled = train_x.to_numpy()
+mean = np.mean(x_unscaled, axis=0)
+std = np.std(x_unscaled, axis=0)
+
+x = (x_unscaled - mean) / std
+b = 0
+w = np.zeros((train_x.shape[1], 1))
+y = train_y.to_numpy().reshape(-1,1)
+
+cost_hist = np.array([])
+
+iterations = 100
+lam= 10
+alpha = .1
+
+for i in range(iterations):
+    cost_val = cost_w_bias_l2(b,w,x,y,lam)
+    cost_hist = np.append(cost_hist,cost_val)
+    b, w = grad_descent_w_bias_l2(b,w,x,y,lam,alpha)
+
+    print(f"new cost: {cost_val}")
+
+# %%
+x = np.arange(1,iterations+1)
+y = cost_hist
+
+plt.plot(x,y)
+
+plt.xlabel("iteration")
+plt.ylabel("cost")
+plt.title("iterations vs cost")
+
+plt.show()
+
+# %%
+x_test_unscaled = test_x.to_numpy()
+y_true = test_y.to_numpy().reshape(-1,1)
+
+x_test_scaled = (x_test_unscaled - mean) / std
+
+y_prob = sigmoid_w_bias(b, w, x_test_scaled)
+y_pred = (y_prob >= 0.5).astype(int)
+
+results = pd.DataFrame({"y_true": y_true.flatten(),
+    "y_pred": np.array(y_pred).flatten()})
+
+results["tp"] = ((results["y_pred"] == 1) & (results["y_true"] == 1)).astype(int)
+results["fp"] = ((results["y_pred"] == 1) & (results["y_true"] == 0)).astype(int)
+
+results["tn"] = ((results["y_pred"] == 0) & (results["y_true"] == 0)).astype(int)
+results["fn"] = ((results["y_pred"] == 0) & (results["y_true"] == 1)).astype(int)
+
+accuracy = np.mean(results["y_pred"] == results["y_true"])
+precision = results["tp"].sum() / (results["tp"].sum() + results["fp"].sum())
+recall = results["tp"].sum() / (results["tp"].sum() + results["fn"].sum())
+f1 = 2 * ((precision * recall) / (precision + recall))
+
+print(f"accuracy: {accuracy}")
+print(f"precision: {precision}")
+print(f"recall: {recall}")
+print(f"f1: {f1}")
+
+# w's no lambda
+# array([[0.49151999],
+#        [0.61648032],
+#        [0.21707886]])
 
 
+# w's with lambda
+# array([[0.49891395],
+#       [0.62617623],
+#       [0.22044241]])
+
+# %%
+# When lambda was added, the weights got a little smaller because regularization pushes them toward zero. This makes the model a bit less flexible, so the training error went up slightly. The tradeoff is that it can help the model generalize better on new data.
