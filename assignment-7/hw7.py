@@ -115,20 +115,26 @@ heart_df
 # 
 
 # %%
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+
 features = heart_df[["Age", "Sex", "Chol"]]
 labels = (heart_df["Target"] == "Yes").astype(int)
 
+scaled_values = scaler.fit_transform(features[["Age", "Chol"]])
+scaled_df = pd.DataFrame(scaled_values, columns=["Age_scaled", "Chol_scaled"], index=features.index)
+features = pd.concat([scaled_df, features[["Sex"]]], axis=1)
+
 # train/test split
-split = .8
+split = 0.8
+split_idx = int(features.shape[0] * split)
 
-train = np.arange(0, round(features.shape[0] * split) + 1)
-test = np.arange(train[-1] + 1, features.shape[0])
+train_x = features.iloc[:split_idx]
+train_y = labels.iloc[:split_idx]
 
-train_x = features.iloc[train]
-train_y = labels.iloc[train]
-
-test_x = features.iloc[test]
-test_y = labels.iloc[test]
+test_x = features.iloc[split_idx:]
+test_y = labels.iloc[split_idx:]
 
 # %%
 from sklearn import svm # type: ignore
@@ -189,9 +195,6 @@ print(f"classification report:\n{class_report}")
 
 # %%
 # Add your code Here! 
-
-# %%
-
 
 # %%
 
