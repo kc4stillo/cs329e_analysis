@@ -53,12 +53,6 @@ df_melb = pd.read_csv('melb_data_train.csv')
 # For reference, here are the data types of each column.
 df_melb.dtypes
 
-df_melb["Date"] = df_melb["Date"].str.replace("/17","/2017").str.replace("/16", "/2016")
-df_melb["Date"] = df_melb["Date"].apply(lambda x: time.strptime(x, "%d/%m/%Y"))
-df_melb["Date"] = df_melb["Date"].apply(time.mktime)
-
-df_melb["Date"]
-
 # %% [markdown]
 # <!-- BEGIN QUESTION -->
 # 
@@ -66,7 +60,8 @@ df_melb["Date"]
 
 # %%
 def standardize_date(date_string):
-    """Standardize a date string to a standard format.
+    """
+    Standardize a date string to a standard format.
 
     Rules:
     - You can assume the input string is of the form day/month/year.
@@ -75,34 +70,33 @@ def standardize_date(date_string):
     - If the input string's year is two digits (e.g. 02), assume
       the year is in the 2000s (e.g. 2002).
     """
-    date_string = "4/3/17"
-    
     idx_2 = 2
-    idx_3 = 3
     idx_4 = 4
 
-    if idx_2 != "/":
+    if date_string[idx_2] != "/":
         date_string = "0" + date_string
 
-    if idx_4 == "/":
+    if date_string[idx_4] == "/":
         date_string = date_string[:3] + "0" + date_string[3:]
     
+    if len(date_string) <= 9:
+        date_string = date_string[:6] + "20"+ date_string[6:]
 
-    fixed_date_string = date_string.replace("/17","/2017").replace("/16", "/2016")
-    return fixed_date_string
+    return date_string
 
 def replace_date_with_unix(df):
-    """Given a Melbourne dataset dataframe, replace the Date column
+    """
+    Given a Melbourne dataset dataframe, replace the Date column
     with a UnixTime column.
 
     Hint: Call standardize_date within this function.
     """
-    # Standardize the date column.
-    ...
-    # Create the UnixTime column
-    ...
-    # Drop the date column.
-    df = ...
+    df["Date"] = df_melb["Date"].apply(standardize_date)
+    df["Date"] = df["Date"].apply(lambda x: time.strptime(x, "%d/%m/%Y"))
+
+    df["UnixTime"] = df["Date"].apply(time.mktime)
+    df.drop(labels="Date", inplace=True, axis=1)
+
     return df
 
 # %%
@@ -135,25 +129,37 @@ print('Max UnixTime:', df_melb_q1['UnixTime'].max())
 
 # %%
 def build_imputation_dict(df, target_col):
-    """Collect the mean values of each column, excluding NaN values
+    """
+    Collect the mean values of each column, excluding NaN values
     and the target column.
     """
     dict_imputation = {}
 
-    # Get the mean value of each column.
-    ...
+    cols = list(df.columns)
+    cols.remove(target_col)
+
+    for col in cols:
+        dict_imputation[col] = np.mean(df[col])
+
     return dict_imputation
 
 def imputate(df, dict_imputation, target_col):
-    """Imputate a dataframe, replacing missing values with those
-    given in dict_imputation. Do not imputate target_col."""
-    df = ...
-    ...
+    """
+    Imputate a dataframe, replacing missing values with those
+    given in dict_imputation. Do not imputate target_col.
+    """
+    cols = list(df.columns)
+    cols.remove(target_col)
+
+    for col in cols:
+        curr_fill = dict_imputation[col]
+        df[col] = df[col].fillna(curr_fill)
+    
     return df
 
 # %%
 # Define the target column as a string
-target_col = ...
+target_col = "Type"
 
 # Collect imputation values
 dict_imputation = build_imputation_dict(df_melb_q1, target_col)
