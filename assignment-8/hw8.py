@@ -53,6 +53,12 @@ df_melb = pd.read_csv('melb_data_train.csv')
 # For reference, here are the data types of each column.
 df_melb.dtypes
 
+df_melb["Date"] = df_melb["Date"].str.replace("/17","/2017").str.replace("/16", "/2016")
+df_melb["Date"] = df_melb["Date"].apply(lambda x: time.strptime(x, "%d/%m/%Y"))
+df_melb["Date"] = df_melb["Date"].apply(time.mktime)
+
+df_melb["Date"]
+
 # %% [markdown]
 # <!-- BEGIN QUESTION -->
 # 
@@ -69,7 +75,20 @@ def standardize_date(date_string):
     - If the input string's year is two digits (e.g. 02), assume
       the year is in the 2000s (e.g. 2002).
     """
-    fixed_date_string = ...
+    date_string = "4/3/17"
+    
+    idx_2 = 2
+    idx_3 = 3
+    idx_4 = 4
+
+    if idx_2 != "/":
+        date_string = "0" + date_string
+
+    if idx_4 == "/":
+        date_string = date_string[:3] + "0" + date_string[3:]
+    
+
+    fixed_date_string = date_string.replace("/17","/2017").replace("/16", "/2016")
     return fixed_date_string
 
 def replace_date_with_unix(df):
