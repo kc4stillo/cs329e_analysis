@@ -24,9 +24,14 @@
 # These are the libraries you will use for this assignment.
 import pandas as pd
 import numpy as np
+from numpy import linalg as la
 import matplotlib.pyplot as plt
 import time
-import calendar
+
+### JUST TO SUPPRESS WARNINGS:
+import warnings
+warnings.filterwarnings('ignore')
+
 %matplotlib inline
 
 # %%
@@ -91,7 +96,7 @@ def replace_date_with_unix(df):
 
     Hint: Call standardize_date within this function.
     """
-    df["Date"] = df_melb["Date"].apply(standardize_date)
+    df["Date"] = df["Date"].apply(standardize_date)
     df["Date"] = df["Date"].apply(lambda x: time.strptime(x, "%d/%m/%Y"))
 
     df["UnixTime"] = df["Date"].apply(time.mktime)
@@ -200,25 +205,42 @@ df_melb_q2.head()
 
 # %%
 def build_normalization_dict(df, target_col):
-    """Collect the (min, max) values of each column, except the
+    """
+    Collect the (min, max) values of each column, except the
     target column.
     """
     dict_normalize = {}
 
-    # Get the min and max values of each column.
-    ...
+    cols = list(df.columns)
+    cols.remove(target_col)
+
+    for col in cols:
+        temp_min = np.min(df[col])
+        temp_max = np.max(df[col])
+
+        dict_normalize[col] = (temp_min, temp_max)
+
     return dict_normalize
 
 def normalize(df, dict_normalize, target_col):
-    """Normalize a dataframe, setting all values to the range [0, 1]
-    using (min, max) values in dict_normalize. Do not normalize target_col."""
-    df = ...
-    ...
+    """
+    Normalize a dataframe, setting all values to the range [0, 1]
+    using (min, max) values in dict_normalize. Do not normalize target_col.
+    """
+    cols = list(df.columns)
+    cols.remove(target_col)
+
+    for col in cols:
+        temp_min = dict_normalize[col][0]
+        temp_max = dict_normalize[col][1]
+        
+        df[col] = (df[col] - temp_min) / (temp_max - temp_min)
+
     return df
 
 # %%
 # Define the target column as a string
-target_col = ...
+target_col = "Type"
 
 # Collect normalization values
 dict_normalize = build_normalization_dict(df_melb_q2, target_col)
@@ -250,19 +272,19 @@ df_melb_q3.head()
 
 # %%
 # Load the test dataframe
-df_melb_test = ...
+df_melb_test = pd.read_csv("melb_data_test.csv")
 
 # Clean the dates, add unix time
 df_melb_test = replace_date_with_unix(df_melb_test)
 
 # Imputate the dataframe
-target_col = ...
-dict_imputation_test = ...
-df_melb_test = ...
+target_col = "Type"
+dict_imputation_test = build_imputation_dict(df_melb_test, target_col)
+df_melb_test = imputate(df_melb_test, dict_imputation_test, target_col)
 
 # Normalize the dataframe
-dict_normalize_test = ...
-df_melb_test = ...
+dict_normalize_test = build_normalization_dict(df_melb_test, target_col)
+df_melb_test = normalize(df_melb_test, dict_normalize_test, target_col)
 
 # %%
 # Check your results
@@ -296,7 +318,8 @@ df_melb_test.head()
 # %%
 def predict_knn(df_train: pd.DataFrame, k: int, 
                 test_sample: pd.Series, target_col: str):
-    """Use the k-nearest neighbors algorithm to predict the class of a test-sample,
+    """
+    Use the k-nearest neighbors algorithm to predict the class of a test-sample,
     given a training set.
     
     Parameters:
@@ -309,7 +332,19 @@ def predict_knn(df_train: pd.DataFrame, k: int,
         prediction: Predicted class of the test sample using kNN.
     """
     ...
-    prediction = ...
+    df_train_with_dist = df_train.copy()
+
+    for i in range(len(df_train)):
+        vector = df_train.drop(columns=target_col).iloc[i]
+
+        df_train_with_dist.loc[i, "distance_from_point"] = la.norm(vector - test_sample)
+
+    k_smallest_idx = df_train_with_dist["distance_from_point"].nsmallest(k).index
+    k_smallest = df_train_with_dist[df_train_with_dist.index.isin(k_smallest_idx)]
+
+    target_cnt = k_smallest[target_col].value_counts()
+
+    prediction = target_cnt.idxmax()
     return prediction
 
 # %% [markdown]
@@ -338,19 +373,31 @@ def predict_knn(df_train: pd.DataFrame, k: int,
 
 # %%
 # Sweep over the k-values. Place your accuracies for each k-value in acc_k.
-poss_k = [1, 3, 13, 25, 50, 100]
+poss_k = [1, 3, 
+          13, 
+          25, 50, 
+          100
+          ]
 acc_k = []
 
 # Your code goes below.
-...
+for k in poss_k:
+    correct_cnt = 0
+
+    for i in range(len(df_melb_test)):
+        y = df_melb_test.loc[i, "Type"] 
+        curr_feat = df_melb_test.drop(columns="Type").iloc[i]
+        y_pred = predict_knn(df_melb_q3, k, curr_feat, "Type")
+        # print(f"knn: {k}\npredicted point: {i+1}\nremaining: {len(df_melb_test)-(i+1)}")
+
+        if y==y_pred:
+            correct_cnt += 1
+        
+    acc_k.append(correct_cnt / len(df_melb_test))
 
 # %%
 # Plot your accuracies for each k-value.
-...
+plt.plot(poss_k, acc_k)
 
 # %% [markdown]
-# <!-- END QUESTION -->
-# 
-# 
-
-
+# After running the model 6 times with varying k-values, I would choose k=5, as it has the highest accuracy among all the candidates ~(0.819672131147541). However, k=3 also performs quite well, boasting an accuracy of ~0.8032786885245902. I would continue with trying k values near these two numbers to converge to the best possible value, such as k=7 or k=9. 
