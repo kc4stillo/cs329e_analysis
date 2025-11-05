@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold
-# from sklearn.metrics import plot_roc_curve
+from sklearn.metrics import accuracy_score,roc_curve, auc, RocCurveDisplay, recall_score, precision_score, roc_curve
 
 # This is the credit card data provided, we'll use sklearn methods to do cross validation
 # to estimate error
@@ -98,7 +98,34 @@ ppv_ab = np.zeros(k)
 fpr_ab = np.zeros(k)
 
 # %%
-# your code here
+for i in range(k):
+    ada = AdaBoostClassifier(n_estimators=25, random_state=23)
+    ada.fit(d_train_df_X[i], d_train_s_y[i])
+    print(f"fitted fold: {i}")
+
+    y_pred = ada.predict(d_test_df_X[i]) 
+    y_prob = ada.predict_proba(d_test_df_X[i])[:,1]
+    y_true = d_test_s_y[i]
+    print(f"predicted fold: {i}")
+
+    tp = ((y_true == 1) & (y_pred == 1)).sum()
+    fn = ((y_true == 1) & (y_pred == 0)).sum()
+    fp = ((y_true == 0) & (y_pred == 1)).sum()
+    tn = ((y_true == 0) & (y_pred == 0)).sum()
+
+    acc_ab[i] = (tp + tn) / (tp +fn + fp + tn)
+    tpr_ab[i] = tp / (tp + fn)
+    ppv_ab[i] = tp / (tp + fp)
+    fpr_ab[i] = fp / (fp + tn)
+    print(f"calculated metrics fold: {i}")
+
+    disp = RocCurveDisplay.from_predictions(y_true, y_prob)
+    disp.ax_.plot([0, 1], [0, 1])
+    disp.ax_.set_title('ROC Curve')
+    plt.show()
+    print(f"plotted roc_auc for fold: {i}")
+
+y_hat_ab = y_pred
 
 # %%
 print(
