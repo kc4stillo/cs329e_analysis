@@ -121,7 +121,7 @@ for i in range(k):
 
     disp = RocCurveDisplay.from_predictions(y_true, y_prob)
     disp.ax_.plot([0, 1], [0, 1])
-    disp.ax_.set_title('ROC Curve')
+    disp.ax_.set_title('ROC Curve for AdaBoost')
     plt.show()
     print(f"plotted roc_auc for fold: {i}")
 
@@ -168,7 +168,34 @@ ppv_rf = np.zeros(k)
 fpr_rf = np.zeros(k)
 
 # %%
-# your code here
+for i in range(k):
+    rfc = RandomForestClassifier(criterion="entropy", max_features="sqrt", random_state=23)
+    rfc.fit(d_train_df_X[i], d_train_s_y[i])
+    print(f"fitted fold: {i}")
+
+    y_pred = rfc.predict(d_test_df_X[i]) 
+    y_prob = rfc.predict_proba(d_test_df_X[i])[:,1]
+    y_true = d_test_s_y[i]
+    print(f"predicted fold: {i}")
+
+    tp = ((y_true == 1) & (y_pred == 1)).sum()
+    fn = ((y_true == 1) & (y_pred == 0)).sum()
+    fp = ((y_true == 0) & (y_pred == 1)).sum()
+    tn = ((y_true == 0) & (y_pred == 0)).sum()
+
+    acc_rf[i] = (tp + tn) / (tp +fn + fp + tn)
+    tpr_rf[i] = tp / (tp + fn)
+    ppv_rf[i] = tp / (tp + fp)
+    fpr_rf[i] = fp / (fp + tn)
+    print(f"calculated metrics fold: {i}")
+
+    disp = RocCurveDisplay.from_predictions(y_true, y_prob)
+    disp.ax_.plot([0, 1], [0, 1])
+    disp.ax_.set_title('ROC Curve for Random Forest')
+    plt.show()
+    print(f"plotted roc_auc for fold: {i}")
+
+y_hat_ab = y_pred
 
 # %%
 print(
