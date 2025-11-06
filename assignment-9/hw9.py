@@ -195,7 +195,7 @@ for i in range(k):
     plt.show()
     print(f"plotted roc_auc for fold: {i}")
 
-y_hat_ab = y_pred
+y_hat_rf = y_pred
 
 # %%
 print(
@@ -226,9 +226,26 @@ print(
 # Using the 3rd fold test sample, calculate how much money Mr Bank Man will save with each algorithm, and make a recommendation of which algorithm to deploy to production.
 
 # %%
+y_true = d_test_s_y[2].reset_index(drop=True)
+x_test = d_test_df_X[2].reset_index(drop=True)
 
+cost_rf = 0
+cost_ab = 0
+
+for idx in range(len(y_true)):
+    if i == 1:
+        if y_hat_rf[idx] != 1:
+            cost_rf += (x_test.loc[i, "Amount"] * 2)
+        if y_hat_ab[idx] != 1:
+            cost_ab += (x_test.loc[i, "Amount"] * 2)
+    else:
+        if y_hat_rf[idx] == 1:
+            cost_rf += 3
+        if y_hat_ab[idx] == 1:
+            cost_ab += 3
+
+print(f"final cost of adaboost: {cost_ab}")
+print(f"final cost of random forest: {cost_rf}")
 
 # %% [markdown]
-# Mr Bank man will save more money, if we deploy the <> algorithm! 
-
-
+# Mr Bank man will save more money, if we deploy the Random Forest algorithm! 
