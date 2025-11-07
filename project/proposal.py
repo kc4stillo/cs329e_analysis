@@ -58,6 +58,15 @@ df["date_time"] = pd.to_datetime(
 # Drop any rows where date parsing failed
 df = df.dropna(subset=["date_time"]).reset_index(drop=True)
 
+# %% [markdown]
+1. Describe the Model You Are Using
+We are using **SentenceTransformer embeddings** followed by **t-SNE** for dimensionality reduction.
+
+- **SentenceTransformer**: Converts each tweet into a dense vector that captures semantic meaning. Tweets with similar content will have similar vectors.
+- **t-SNE (t-distributed Stochastic Neighbor Embedding)**: Projects high-dimensional vectors into 2D space while preserving local neighborhoods, allowing us to visualize clusters.
+
+This combination allows us to visually explore patterns in tweet content across different authors.
+
 # %%
 ### 4. Feature Engineering: Sentence Embeddings & t-SNE
 
