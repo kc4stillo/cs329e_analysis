@@ -30,6 +30,8 @@ df = (
     .reset_index(drop=True)
 )
 
+df_raw["author"].value_counts()
+
 # %%
 ### 3. Text Cleaning
 
