@@ -1,9 +1,9 @@
 # %% [markdown]
 # ## C S 329E HW 10
 # 
-# # Add Your Names here 
+# Kyle Castillo 
 # 
-# # Add Your Names here 
+# Andre Sae 
 # 
 
 # %% [markdown]
@@ -45,8 +45,10 @@ df_kmeans = pd.read_csv('data_kmeans.csv')
 # To initialize the centroids, we pick `k` random points from a data frame.  Write a function `init_centroids( df_data, k )` that accepts two parameters: a data frame `df_data`, and an integer `k`, and returns the initial centroids for our k-means algorithm.  Note, we want the indices of the returned data frame to range from 0 - (k-1) so that we can use these as the centroid labels.  Use [pandas sample](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.sample.html) method, and pass it the value of $42$ for `random_state`. 
 
 # %%
+df_data = 
+
 def init_centroids( df_data, k ):
-    # your code here
+    df_data 
 
 # %%
 # Testing our init centroid function
