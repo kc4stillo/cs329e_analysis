@@ -45,10 +45,9 @@ df_kmeans = pd.read_csv('data_kmeans.csv')
 # To initialize the centroids, we pick `k` random points from a data frame.  Write a function `init_centroids( df_data, k )` that accepts two parameters: a data frame `df_data`, and an integer `k`, and returns the initial centroids for our k-means algorithm.  Note, we want the indices of the returned data frame to range from 0 - (k-1) so that we can use these as the centroid labels.  Use [pandas sample](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.sample.html) method, and pass it the value of $42$ for `random_state`. 
 
 # %%
-df_data = 
-
 def init_centroids( df_data, k ):
-    df_data 
+    df_centroids = df_data.sample(n=k, random_state=42).reset_index(drop=True)
+    return df_centroids
 
 # %%
 # Testing our init centroid function
@@ -70,8 +69,28 @@ df_centroids
 
 # %%
 def assign_to_centroid( df_data, df_centroids ):
-    # your code here
+    assignments = []
 
+    for i, row in df_data.iterrows():
+        closest_centroid = None
+        closest_distance = 9999999
+
+        for c_idx, c_row in df_centroids.iterrows():
+            distance = 0
+            for col in df_data.columns:
+                distance += (row[col] - c_row[col]) ** 2
+            distance = distance ** 0.5
+
+            # check if centroid is closest
+            if distance < closest_distance:
+                closest_distance = distance
+                closest_centroid = c_idx
+
+        # save the index of the closest centroid
+        assignments.append(closest_centroid)
+
+    # return as a series with same index
+    return pd.Series(assignments, index=df_data.index)
 # %%
 # Check how many data points were assigned to each centroid
 s_centroid_assignment = assign_to_centroid( df_kmeans, df_centroids )
@@ -87,7 +106,16 @@ s_centroid_assignment.value_counts()
 
 # %%
 def compute_centroids( df_data, s_centroid_assignment ):
-    # your code here   
+    centroids = {}
+
+    for centroid_label in sorted(s_centroid_assignment.unique()):
+        rows_in_cluster = df_data[s_centroid_assignment == centroid_label]
+        centroid_mean = rows_in_cluster.mean()
+        centroids[centroid_label] = centroid_mean
+
+    df_centroids = pd.DataFrame.from_dict(centroids, orient='index')
+
+    return df_centroids
 
 # %%
 # Test it out
@@ -101,7 +129,17 @@ df_new_centroids
 
 # %%
 def compare_centroids( df_centroid_a, df_centroid_b ):
-    # your code here
+    if df_centroid_a.shape != df_centroid_b.shape:
+        return False
+
+    for idx in df_centroid_a.index:
+        if idx not in df_centroid_b.index:
+            return False
+        
+        if not df_centroid_a.loc[idx].equals(df_centroid_b.loc[idx]):
+            return False
+
+    return True
 
 # %%
 # Test it out, should print True followed by False
@@ -115,7 +153,18 @@ print(compare_centroids( df_new_centroids, df_centroids ))
 
 # %%
 def k_means( df_data, k ):
-    # your code here
+    df_centroids = init_centroids(df_data, k)
+
+    while True:
+        s_assignment = assign_to_centroid(df_data, df_centroids)
+        df_new_centroids = compute_centroids(df_data, s_assignment)
+
+        if compare_centroids(df_centroids, df_new_centroids):
+            break
+
+        df_centroids = df_new_centroids
+
+    return s_assignment
 
 # %%
 # Call k_means with k = 5 to test
@@ -128,9 +177,20 @@ s_cluster_assignment.value_counts()
 # Plot the points in the `df_kmeans` data frame using a 2-D scatter plot, with a different color for each cluster.  Use the cluster assignments from the previous problem (`s_cluster_assignments`).  Label your axes, and give the plot a title. 
 
 # %%
-# Plot each cluster
+for cluster_label in s_cluster_assignment.unique():
+    cluster_points = df_kmeans[s_cluster_assignment == cluster_label]
+    
+    plt.scatter(
+        cluster_points.iloc[:, 0],   
+        cluster_points.iloc[:, 1],   
+        label=f"Cluster {cluster_label}"
+    )
 
-# your code here  
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.title("K-Means Clustering Results")
+plt.legend()
+plt.show()
 
 # %% [markdown]
 # # Part 2 : DBSCAN
