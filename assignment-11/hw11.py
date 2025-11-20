@@ -58,15 +58,37 @@ df_X = df_X.drop(columns=['State'])
 
 # %%
 # Plot the dendrogram for the Ward proximity measure
-print(df_X)
+plt.figure(figsize=(12, 8))
+ward = linkage(df_X, method='ward')
+
+dendrogram(ward, labels=s_states.values, leaf_rotation=90)
+plt.title("ward linkage")
+plt.xlabel("state")
+plt.ylabel("distance")
+plt.show()
+
 
 # %%
 # Plot the dendrogram for the min proximity measure
+plt.figure(figsize=(12, 8))
+min = linkage(df_X, method='single')
 
+dendrogram(min, labels=s_states.values, leaf_rotation=90)
+plt.title("min linkage")
+plt.xlabel("state")
+plt.ylabel("distance")
+plt.show()
 
 # %%
 # Plot the dendrogram for the max proximity measure
+plt.figure(figsize=(12, 8))
+max = linkage(df_X, method='complete')
 
+dendrogram(max, labels=s_states.values, leaf_rotation=90)
+plt.title("max linkage")
+plt.xlabel("state")
+plt.ylabel("distance")
+plt.show()
 
 # %% [markdown]
 # ## Q2 - Using Different Proximity Functions (part 2)
@@ -92,15 +114,38 @@ df_X = df_X.drop(columns=['State'])
 
 # %%
 # Plot the dendrogram for the Ward proximity measure
+plt.figure(figsize=(12, 8))
+ward = linkage(df_X, method='ward')
 
+dendrogram(ward, labels=s_states.values, leaf_rotation=90)
+plt.title("ward linkage, republican percentage")
+plt.xlabel("state")
+plt.ylabel("distance")
+plt.show()
 
 # %%
 # Plot the dendrogram for the min proximity measure
+plt.figure(figsize=(12, 8))
+min = linkage(df_X, method='single')
 
+dendrogram(min, labels=s_states.values, leaf_rotation=90)
+plt.title("min linkagem Republican percentage")
+plt.xlabel("state")
+plt.ylabel("distance")
+plt.show()
 
 # %%
 # Plot the dendrogram for the max proximity measure
+# Plot the dendrogram for the max proximity measure (Complete Linkage)
 
+plt.figure(figsize=(12, 8))
+max = linkage(df_X, method='complete')
+
+dendrogram(max, labels=s_states.values, leaf_rotation=90)
+plt.title("complete linkage, republican percentage")
+plt.xlabel("state")
+plt.ylabel("distance")
+plt.show()
 
 # %% [markdown]
 # ## Q3 Calculate the Cophenetic Correlation Coefficient (CPCC)
@@ -133,6 +178,8 @@ df_X = df_X.drop(columns=['State'])
 
 # %%
 # Find the centroids
+init = ["Montana", "Arkansas", "Massachusetts", "Minnesota"]
+centroids = df_X[s_states.isin(init)].values
 
 # %%
 # Show the centroids
@@ -140,6 +187,28 @@ centroids
 
 # %%
 # Compute the k-means clusters and show the listing of the States in each cluster
+kmeans = KMeans(
+    n_clusters=4,
+    init=centroids,
+    n_init=1,
+    random_state=23
+)
+
+kmeans.fit(df_X)
+labels = kmeans.labels_
+
+clusters = {}
+
+for i, state in enumerate(s_states):
+    curr_cluster = list(labels)[i]
+    key = str(curr_cluster)
+
+    if key not in clusters:
+        clusters[key] = []
+
+    clusters[key].append(state)
+
+clusters
 
 # %% [markdown]
 # ## Q5 Visualize the Silhouette Coefficients for Each Cluster
